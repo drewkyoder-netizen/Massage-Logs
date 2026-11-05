@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Massage Log</title>
+<style>
+:root{
+  --bg:#eef2f9;--card:#fff;--ink:#0f1b33;--muted:#5b6782;--line:#d8dfeb;--chip:#eef2f9;
+  --accent:#0b4fb3;--navy:#0a2a66;--yellow:#ffc72c;--on-yellow:#0a2a66;--err:#dc2626;
+  --s-2:#dc2626;--s-1:#ea7a1e;--s0:#64748b;--s1:#22a356;--s2:#13803f;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#08142b;--card:#0f2040;--ink:#eef2fa;--muted:#9fb0cf;--line:#1f3560;--chip:#162b52;--accent:#2f7bff;--navy:#0a2a66;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  padding:0 0 calc(92px + env(safe-area-inset-bottom))}
+header{background:var(--navy);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 16px 16px;border-bottom:4px solid var(--yellow)}
+h1{font-size:24px;margin:0;letter-spacing:-.01em}
+h1 span{color:var(--yellow)}
+section{background:var(--card);margin:12px;border-radius:14px;padding:14px;border:1px solid var(--line)}
+.lab{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
+.field+.field{margin-top:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:600px){.row2{grid-template-columns:1fr;gap:14px}}
+input[type=text],input[type=date],input[type=number],textarea{
+  width:100%;font:inherit;font-size:17px;padding:11px 12px;min-height:48px;border:1px solid var(--line);
+  border-radius:10px;background:var(--bg);color:var(--ink);-webkit-appearance:none;appearance:none}
+input::-webkit-date-and-time-value{text-align:left}
+textarea{min-height:96px;resize:vertical}
+input:focus,textarea:focus{outline:2px solid var(--yellow);outline-offset:-1px}
+.err input,.err .chips{outline:2px solid var(--err);outline-offset:2px;border-radius:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;color:var(--ink);cursor:pointer}
+.chip{border:1px solid var(--line);background:var(--chip);font-size:15px;padding:9px 14px;min-height:44px;border-radius:999px}
+.chip.sm{min-height:36px;padding:6px 12px;font-size:14px}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.mins{margin-top:8px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin:-2px 0 4px}
+.legend b{font-variant-numeric:tabular-nums}
+.grp{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:16px 0 2px}
+.m{border-top:1px solid var(--line);padding:9px 0}
+.m-top{display:flex;align-items:center;gap:8px}
+.m-name{flex:1;font-size:16px}
+.side{width:52px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--chip);font-weight:700}
+.side[aria-pressed=true]{background:var(--yellow);border-color:var(--yellow);color:var(--on-yellow)}
+.score{display:flex;align-items:center;gap:6px;margin-top:8px}
+.score .sl{width:20px;font-weight:700;color:var(--muted);font-size:14px}
+.sc{flex:1;height:42px;border-radius:9px;border:1px solid var(--line);background:var(--chip);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.score.missing .sc{border-color:var(--err)}
+.sc[aria-pressed=true]{color:#fff;border-color:transparent}
+.sc[aria-pressed=true][data-v="-2"]{background:var(--s-2)}
+.sc[aria-pressed=true][data-v="-1"]{background:var(--s-1)}
+.sc[aria-pressed=true][data-v="0"]{background:var(--s0)}
+.sc[aria-pressed=true][data-v="1"]{background:var(--s1)}
+.sc[aria-pressed=true][data-v="2"]{background:var(--s2)}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:var(--card);border-top:1px solid var(--line);display:flex;gap:10px}
+#clear{flex:0 0 30%;height:52px;border-radius:12px;border:2px solid var(--accent);background:transparent;color:var(--accent);font-size:16px;font-weight:700}
+#clear.armed{background:var(--err);border-color:var(--err);color:#fff}
+#save{flex:1;height:52px;border:0;border-radius:12px;background:var(--yellow);color:var(--on-yellow);font-size:17px;font-weight:700}
+#save:disabled{opacity:.6}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+  background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:10px;font-size:15px;opacity:0;
+  transition:.2s;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.bad{background:var(--err);color:#fff}
+</style>
+</head>
+<body>
+<header><h1>Massage <span>Log</span></h1></header>
+
+<section>
+  <div class="field" id="f-ath">
+    <label class="lab" for="athlete">Athlete</label>
+    <input type="text" id="athlete" list="athletes" autocomplete="off" autocapitalize="words" placeholder="Athlete name">
+    <datalist id="athletes"></datalist>
+  </div>
+  <div class="field" id="f-clin">
+    <label class="lab" for="clinician">Clinician</label>
+    <input type="text" id="clinician" autocomplete="name" autocapitalize="words" placeholder="Your name">
+  </div>
+  <div class="field row2">
+    <div id="f-date">
+      <label class="lab" for="date">Date</label>
+      <input type="date" id="date">
+    </div>
+    <div id="f-min">
+      <label class="lab" for="minutes">Minutes</label>
+      <input type="number" id="minutes" inputmode="numeric" min="1" max="600" placeholder="0">
+    </div>
+  </div>
+  <div class="chips mins" id="minChips"></div>
+</section>
+
+<section id="f-type">
+  <span class="lab">Session type</span>
+  <div class="chips" id="types"></div>
+</section>
+
+<section>
+  <span class="lab">Tissue quality</span>
+  <div class="legend"><span><b>−2</b> poor</span><span><b>−1</b> below avg</span><span><b>0</b> baseline</span><span><b>+1</b> above avg</span><span><b>+2</b> excellent</span></div>
+  <div id="muscles"></div>
+</section>
+
+<section>
+  <label class="lab" for="notes">Notes</label>
+  <textarea id="notes" placeholder="Findings, response to treatment, plan"></textarea>
+</section>
+
+<div class="bar"><button type="button" id="clear">Clear</button><button type="button" id="save">Save entry</button></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const MUSCLES = {
+  'Lower body': ['Glutes','Hip flexors','Adductors','Hamstrings','Quads','TFL/ITB','Gastroc/Soleus','Plantar fascia'],
+  'Trunk': ['Lumbar','Thoracic','Lats'],
+  'Upper body': ['Pecs','Upper trap','RTC','Cervical']
+};
+const TYPES = ['Pre game','Post game','Recovery','Maintenance','RTP','Stretch'];
+const MIN_PRESETS = [10,15,20,30,45,60,75,90];
+const SCORES = [-2,-1,0,1,2];
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+const LIVE = !!(window.google && google.script && google.script.run);
+
+// sel[name] = { L: null|score, R: null|score }  (key present = side selected)
+let sel = {};
+let type = null;
+const order = []; // muscle display order
+
+function today(){
+  const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+function el(tag, attrs, text){
+  const n = document.createElement(tag);
+  for (const k in (attrs||{})) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+/* Session type + minute chips */
+TYPES.forEach(t => {
+  const b = el('button', {type:'button', class:'chip', 'aria-pressed':'false'}, t);
+  b.onclick = () => {
+    type = type === t ? null : t;
+    [...$('types').children].forEach(c => c.setAttribute('aria-pressed', c.textContent === type));
+    $('f-type').classList.remove('err');
+  };
+  $('types').appendChild(b);
+});
+MIN_PRESETS.forEach(m => {
+  const b = el('button', {type:'button', class:'chip sm'}, m + ' min');
+  b.onclick = () => { $('minutes').value = m; $('f-min').classList.remove('err'); };
+  $('minChips').appendChild(b);
+});
+
+/* Muscles */
+function muscleRow(name){
+  order.push(name);
+  const wrap = el('div', {class:'m'});
+  const top = el('div', {class:'m-top'});
+  top.appendChild(el('span', {class:'m-name'}, name));
+  const scores = el('div');
+  ['L','R'].forEach(side => {
+    const b = el('button', {type:'button', class:'side', 'aria-pressed':'false', 'aria-label':name + ' ' + side}, side);
+    b.onclick = () => {
+      sel[name] = sel[name] || {};
+      if (side in sel[name]) delete sel[name][side]; else sel[name][side] = null;
+      if (!Object.keys(sel[name]).length) delete sel[name];
+      b.setAttribute('aria-pressed', !!(sel[name] && side in sel[name]));
+      drawScores(name, scores);
+      updateCount();
+    };
+    top.appendChild(b);
+  });
+  wrap.appendChild(top);
+  wrap.appendChild(scores);
+  wrap.dataset.name = name;
+  return wrap;
+}
+function drawScores(name, box){
+  box.innerHTML = '';
+  const s = sel[name]; if (!s) return;
+  ['L','R'].filter(k => k in s).forEach(side => {
+    const row = el('div', {class:'score', 'data-side':side});
+    row.appendChild(el('span', {class:'sl'}, side));
+    SCORES.forEach(v => {
+      const b = el('button', {type:'button', class:'sc', 'data-v':v, 'aria-pressed':String(s[side] === v)},
+        v > 0 ? '+' + v : v < 0 ? '−' + Math.abs(v) : '0');
+      b.onclick = () => { s[side] = v; drawScores(name, box); };
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  });
+}
+function buildMuscles(){
+  const root = $('muscles');
+  for (const g in MUSCLES){
+    root.appendChild(el('div', {class:'grp'}, g));
+    MUSCLES[g].forEach(n => root.appendChild(muscleRow(n)));
+  }
+}
+
+function picked(){
+  const out = [];
+  order.forEach(n => { const s = sel[n]; if (!s) return;
+    ['L','R'].forEach(side => { if (side in s) out.push({group:n, side, score:s[side]}); });
+  });
+  return out;
+}
+function updateCount(){
+  const n = picked().length;
+  $('save').textContent = n ? 'Save entry · ' + n + (n === 1 ? ' row' : ' rows') : 'Save entry';
+}
+
+/* Athlete autocomplete: prior entries from the Sheet + this device's recents */
+function recent(){ try{ return JSON.parse(store.get('tl_recent') || '[]'); }catch(e){ return []; } }
+function fillAthletes(list){
+  const all = Array.from(new Set(recent().concat(list || []))).sort();
+  $('athletes').innerHTML = '';
+  all.forEach(a => $('athletes').appendChild(el('option', {value:a})));
+}
+
+/* Validate + submit */
+function toast(msg, bad){
+  const t = $('toast'); t.textContent = msg; t.className = 'toast on' + (bad ? ' bad' : '');
+  clearTimeout(t._h); t._h = setTimeout(() => t.className = 'toast', 2600);
+}
+function validate(){
+  document.querySelectorAll('.err,.missing').forEach(n => n.classList.remove('err','missing'));
+  const bad = [];
+  if (!$('athlete').value.trim()) { $('f-ath').classList.add('err'); bad.push($('f-ath')); }
+  if (!$('date').value) { $('f-date').classList.add('err'); bad.push($('f-date')); }
+  const m = Number($('minutes').value);
+  if (!(m > 0 && m <= 600)) { $('f-min').classList.add('err'); bad.push($('f-min')); }
+  if (!type) { $('f-type').classList.add('err'); bad.push($('f-type')); }
+  document.querySelectorAll('.m').forEach(w => {
+    const s = sel[w.dataset.name]; if (!s) return;
+    w.querySelectorAll('.score').forEach(r => {
+      if (s[r.dataset.side] == null) { r.classList.add('missing'); bad.push(r); }
+    });
+  });
+  if (bad.length){
+    bad[0].scrollIntoView({behavior:'smooth', block:'center'});
+    toast('Fill in the highlighted fields', true);
+    return false;
+  }
+  return true;
+}
+function reset(){
+  $('athlete').value = ''; $('minutes').value = ''; $('notes').value = '';
+  type = null; [...$('types').children].forEach(c => c.setAttribute('aria-pressed','false'));
+  sel = {};
+  document.querySelectorAll('.side').forEach(b => b.setAttribute('aria-pressed','false'));
+  document.querySelectorAll('.m > div:last-child').forEach(b => b.innerHTML = '');
+  updateCount();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+$('save').onclick = () => {
+  if (!validate()) return;
+  const payload = {
+    athlete: $('athlete').value.trim(),
+    clinician: $('clinician').value.trim(),
+    date: $('date').value,
+    minutes: Number($('minutes').value),
+    sessionType: type,
+    muscles: picked(),
+    notes: $('notes').value.trim()
+  };
+  store.set('tl_clinician', payload.clinician);
+  const btn = $('save'); btn.disabled = true; btn.textContent = 'Saving…';
+  const done = res => {
+    const r = recent().filter(a => a !== payload.athlete); r.unshift(payload.athlete);
+    store.set('tl_recent', JSON.stringify(r.slice(0, 40)));
+    fillAthletes([...$('athletes').options].map(o => o.value));
+    btn.disabled = false; reset();
+    toast(res.preview ? 'Preview only — not saved' : 'Saved ' + payload.athlete + ' · ' + res.rows + (res.rows === 1 ? ' row' : ' rows'));
+  };
+  const fail = err => { btn.disabled = false; updateCount(); toast((err && err.message) || 'Save failed — try again', true); };
+  if (LIVE) google.script.run.withSuccessHandler(done).withFailureHandler(fail).submitEntry(payload);
+  else setTimeout(() => done({preview:true, rows: Math.max(1, payload.muscles.length)}), 300);
+};
+
+/* Clear page: tap twice within 3s to confirm */
+let clearTimer = null;
+$('clear').onclick = () => {
+  const b = $('clear');
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again';
+    clearTimer = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Clear'; }, 3000);
+    return;
+  }
+  clearTimeout(clearTimer); b.classList.remove('armed'); b.textContent = 'Clear';
+  document.querySelectorAll('.err,.missing').forEach(n => n.classList.remove('err','missing'));
+  reset(); $('date').value = today();
+  toast('Page cleared');
+};
+
+['athlete','date','minutes'].forEach(id => $(id).addEventListener('input', () => $(id).closest('.err')?.classList.remove('err')));
+
+/* Init */
+buildMuscles();
+$('date').value = today();
+$('clinician').value = store.get('tl_clinician') || '';
+fillAthletes([]);
+if (LIVE) google.script.run.withSuccessHandler(fillAthletes).getAthletes();
+</script>
+</body>
+</html>
