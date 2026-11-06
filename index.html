@@ -97,7 +97,7 @@ button{font:inherit;color:var(--ink);cursor:pointer}
 </section>
 
 <section id="f-type">
-  <span class="lab">Session type</span>
+  <span class="lab">Session type <span style="text-transform:none;font-weight:500">(select all that apply)</span></span>
   <div class="chips" id="types"></div>
 </section>
 
@@ -134,7 +134,7 @@ const LIVE = !!(window.google && google.script && google.script.run);
 
 // sel[name] = { L: null|score, R: null|score }  (key present = side selected)
 let sel = {};
-let type = null;
+let types = [];
 const order = []; // muscle display order
 
 function today(){
@@ -152,8 +152,8 @@ function el(tag, attrs, text){
 TYPES.forEach(t => {
   const b = el('button', {type:'button', class:'chip', 'aria-pressed':'false'}, t);
   b.onclick = () => {
-    type = type === t ? null : t;
-    [...$('types').children].forEach(c => c.setAttribute('aria-pressed', c.textContent === type));
+    types = types.includes(t) ? types.filter(x => x !== t) : types.concat(t);
+    b.setAttribute('aria-pressed', types.includes(t));
     $('f-type').classList.remove('err');
   };
   $('types').appendChild(b);
@@ -243,7 +243,7 @@ function validate(){
   if (!$('date').value) { $('f-date').classList.add('err'); bad.push($('f-date')); }
   const m = Number($('minutes').value);
   if (!(m > 0 && m <= 600)) { $('f-min').classList.add('err'); bad.push($('f-min')); }
-  if (!type) { $('f-type').classList.add('err'); bad.push($('f-type')); }
+  if (!types.length) { $('f-type').classList.add('err'); bad.push($('f-type')); }
   document.querySelectorAll('.m').forEach(w => {
     const s = sel[w.dataset.name]; if (!s) return;
     w.querySelectorAll('.score').forEach(r => {
@@ -259,7 +259,7 @@ function validate(){
 }
 function reset(){
   $('athlete').value = ''; $('minutes').value = ''; $('notes').value = '';
-  type = null; [...$('types').children].forEach(c => c.setAttribute('aria-pressed','false'));
+  types = []; [...$('types').children].forEach(c => c.setAttribute('aria-pressed','false'));
   sel = {};
   document.querySelectorAll('.side').forEach(b => b.setAttribute('aria-pressed','false'));
   document.querySelectorAll('.m > div:last-child').forEach(b => b.innerHTML = '');
@@ -274,7 +274,7 @@ $('save').onclick = () => {
     clinician: $('clinician').value.trim(),
     date: $('date').value,
     minutes: Number($('minutes').value),
-    sessionType: type,
+    sessionType: TYPES.filter(t => types.includes(t)),
     muscles: picked(),
     notes: $('notes').value.trim()
   };
