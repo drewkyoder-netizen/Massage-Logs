@@ -150,7 +150,7 @@ const store = {
   set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 };
 /* ===== Backend: paste your Apps Script web app URL (ends in /exec) ===== */
-const API_URL = 'PASTE_WEB_APP_URL_HERE';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwyqN-rBGkHpPdiJr3DKUzhRM5j2Mhf2j_Z_QzoiWToG7_zFJxKANo8Q4jwAnl29es/exec';
 
 const keyStore = {
   get(){ return store.get('tl_key') || ''; },
